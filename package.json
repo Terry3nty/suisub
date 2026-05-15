@@ -1,0 +1,22 @@
+{
+  "name": "suisub-monorepo",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "frontend",
+    "relayer"
+  ],
+  "scripts": {
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:relayer": "npm --prefix relayer run dev",
+    "build:frontend": "npm --prefix frontend run build",
+    "build:contract": "cd contract && sui move build",
+    "build": "npm run build:contract && npm run build:frontend",
+    "test:contract": "cd contract && sui move test",
+    "test": "npm run test:contract",
+    "audit:frontend": "npm --prefix frontend audit --omit=dev",
+    "audit:relayer": "npm --prefix relayer audit --omit=dev",
+    "audit": "npm run audit:frontend && npm run audit:relayer",
+    "verify": "npm run build && npm run test"
+  }
+}

@@ -1,0 +1,21 @@
+# Monorepo root ignores
+node_modules/
+.DS_Store
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Build outputs
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/node_modules/
+frontend/coverage/
+
+relayer/node_modules/
+relayer/dist/
+relayer/build/
+
+contract/build/

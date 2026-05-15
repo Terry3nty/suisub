@@ -1,0 +1,16 @@
+# Local environment variables (IMPORTANT: Never commit these!)
+.env
+.env.local
+
+# Dependencies
+node_modules/
+dist/
+build/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE settings
+.vscode/
+.idea/
