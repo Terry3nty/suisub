@@ -79,6 +79,11 @@ module suisub::subscription {
         merchant: address,
     }
 
+    public struct PlanUnpaused has copy, drop {
+        plan_id: ID,
+        merchant: address,
+    }
+
     public struct PaymentExecuted has copy, drop {
         subscription_id: ID,
         amount: u64,
@@ -210,6 +215,18 @@ module suisub::subscription {
         assert!(tx_context::sender(ctx) == plan.merchant, EUnauthorized);
         plan.active = false;
         event::emit(PlanPaused {
+            plan_id: object::id(plan),
+            merchant: plan.merchant,
+        });
+    }
+
+    public fun unpause_plan<CoinType>(
+        plan: &mut SubscriptionPlan<CoinType>,
+        ctx: &TxContext
+    ) {
+        assert!(tx_context::sender(ctx) == plan.merchant, EUnauthorized);
+        plan.active = true;
+        event::emit(PlanUnpaused {
             plan_id: object::id(plan),
             merchant: plan.merchant,
         });
@@ -728,6 +745,25 @@ module suisub::subscription {
         };
         pause_plan(&mut plan, &ctx);
         assert!(!plan.active, 0);
+        transfer::transfer(plan, tx_context::sender(&ctx));
+    }
+
+    #[test]
+    fun test_unpause_plan_sets_active() {
+        let mut ctx = tx_context::dummy();
+        let mut plan = SubscriptionPlan<0x2::sui::SUI> {
+            id: object::new(&mut ctx),
+            merchant: tx_context::sender(&ctx),
+            name: string::utf8(b"plan"),
+            price: 100,
+            interval_ms: 1_000,
+            grace_period_ms: 1_000,
+            retry_interval_ms: 500,
+            max_failures: 3,
+            active: false,
+        };
+        unpause_plan(&mut plan, &ctx);
+        assert!(plan.active, 0);
         transfer::transfer(plan, tx_context::sender(&ctx));
     }
 }

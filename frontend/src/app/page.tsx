@@ -1022,6 +1022,41 @@ export default function Home() {
       console.error(e);
     }
   };
+  const unpausePlan = async (planId: string, coinType: string) => {
+    if (!account) return;
+    if (!ensurePackageId()) return;
+    if (!coinType) {
+      await showError('Missing coin type for this plan');
+      return;
+    }
+    const confirmed = await Swal.fire({
+      icon: 'warning',
+      title: 'Resume this plan?',
+      text: 'New subscriptions will be enabled again.',
+      showCancelButton: true,
+      confirmButtonText: 'Resume plan',
+      confirmButtonColor: '#10b981',
+      cancelButtonColor: '#374151',
+    });
+    if (!confirmed.isConfirmed) return;
+
+    const tx = new Transaction();
+    tx.moveCall({
+      target: `${PACKAGE_ID}::subscription::unpause_plan`,
+      typeArguments: [coinType],
+      arguments: [tx.object(planId)],
+    });
+
+    try {
+      const result = await signAndExecuteTransaction({ transaction: tx, chain: 'sui:testnet' });
+      await showSuccess(`Plan resumed. Digest: ${result.digest}`);
+      await fetchCreatorPlans();
+      if (mode === 'subscriber') await fetchAvailablePlans();
+    } catch (e) {
+      await showError('Resume plan failed');
+      console.error(e);
+    }
+  };
 
   const checkProtocolAccess = async () => {
     if (!ensurePackageId()) return;
@@ -1387,12 +1422,19 @@ export default function Home() {
                               }`}>
                                 {plan.active ? 'ACTIVE' : 'PAUSED'}
                               </span>
-                              {plan.active && (
+                              {plan.active ? (
                                 <button
                                   onClick={() => void pausePlan(plan.id, plan.coinType)}
                                   className="zinc-btn bg-transparent hover:bg-rose-950/10 border border-zinc-850 hover:border-rose-900/30 text-rose-400 px-2 py-1 rounded text-[10px] font-semibold"
                                 >
                                   Pause
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => void unpausePlan(plan.id, plan.coinType)}
+                                  className="zinc-btn bg-transparent hover:bg-emerald-950/10 border border-zinc-850 hover:border-emerald-900/30 text-emerald-400 px-2 py-1 rounded text-[10px] font-semibold"
+                                >
+                                  Resume
                                 </button>
                               )}
                             </div>
