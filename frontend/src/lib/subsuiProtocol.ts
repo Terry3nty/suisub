@@ -9,10 +9,17 @@ type SubscriptionEvent = {
 export type ProtocolSubscriptionStatus = {
   subscriptionId: string;
   planId: string;
-  active: boolean;
+  escrowId: string;
+  status: number;
   nextDueMs: bigint;
-  escrowMist: bigint;
+  graceUntilMs: bigint;
+  escrowBase: bigint;
 };
+
+const STATUS_ACTIVE = 0;
+const STATUS_PAST_DUE = 1;
+const STATUS_PAUSED = 2;
+const STATUS_CANCELED = 3;
 
 function parseBalanceMist(balance: unknown): bigint {
   if (typeof balance === 'bigint') return balance;
@@ -32,8 +39,10 @@ function parseSubscriptionObject(obj: SuiObjectResponse): ProtocolSubscriptionSt
   if (obj.error || !obj.data?.content || !('fields' in obj.data.content) || !obj.data.objectId) return null;
   const fields = obj.data.content.fields as {
     plan_id?: string;
-    active?: boolean;
+    escrow_id?: string;
     next_due?: string | number | bigint;
+    grace_until?: string | number | bigint;
+    status?: string | number | bigint;
     balance?: string | number | bigint | { fields?: { value?: string | number | bigint } };
   };
 
@@ -41,9 +50,11 @@ function parseSubscriptionObject(obj: SuiObjectResponse): ProtocolSubscriptionSt
   return {
     subscriptionId: obj.data.objectId,
     planId: fields.plan_id,
-    active: Boolean(fields.active),
+    escrowId: fields.escrow_id ?? '',
+    status: fields.status !== undefined ? Number(fields.status) : STATUS_ACTIVE,
     nextDueMs: BigInt(fields.next_due ?? 0),
-    escrowMist: parseBalanceMist(fields.balance),
+    graceUntilMs: BigInt(fields.grace_until ?? 0),
+    escrowBase: parseBalanceMist(fields.balance),
   };
 }
 
@@ -96,12 +107,14 @@ export async function getSubscriptionStatus(params: {
   return null;
 }
 
-export function hasActiveAccess(status: ProtocolSubscriptionStatus | null): boolean {
-  if (!status || !status.active) return false;
+export function hasActiveAccess(status: ProtocolSubscriptionStatus | null, nowMs: number = Date.now()): boolean {
+  if (!status) return false;
+  if (status.status === STATUS_CANCELED || status.status === STATUS_PAUSED) return false;
+  if (status.status === STATUS_PAST_DUE) return status.graceUntilMs > BigInt(nowMs);
   return true;
 }
 
 export function hasStrictAccess(status: ProtocolSubscriptionStatus | null, nowMs: number = Date.now()): boolean {
-  if (!status || !status.active) return false;
+  if (!status || status.status !== STATUS_ACTIVE) return false;
   return status.nextDueMs > BigInt(nowMs);
 }
