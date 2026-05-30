@@ -24,7 +24,7 @@ const WEBHOOK_URLS = (process.env.WEBHOOK_URLS || "")
   .map((url) => url.trim())
   .filter(Boolean);
 const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET?.trim() || "";
-const SPONSOR_PORT = Number(process.env.SPONSOR_PORT ?? 0);
+const SPONSOR_PORT = Number(process.env.SPONSOR_PORT ?? process.env.PORT ?? 0);
 const SPONSOR_GAS_BUDGET = Number(process.env.SPONSOR_GAS_BUDGET ?? 50_000_000);
 const STATUS_ACTIVE = 0;
 const STATUS_PAST_DUE = 1;
